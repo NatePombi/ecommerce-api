@@ -1,1 +1,1 @@
-## Currently completing Version 1 of project
+## Currently completing Version 1 of project.
