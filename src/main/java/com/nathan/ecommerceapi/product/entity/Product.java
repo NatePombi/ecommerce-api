@@ -40,23 +40,24 @@ public class Product {
     @NotBlank
     @Column(nullable = false,name = "image_url")
     private String imageUrl;
-    @PositiveOrZero
+    @Positive
+    @NotNull
     @Column(nullable = false)
-    private int stock;
+    private Integer stock;
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProductStatus status;
     @CreationTimestamp
-    @Column(nullable = false,updatable = false)
+    @Column(nullable = false,updatable = false,name = "created_at")
     private LocalDateTime createdAt;
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
 
 
     public static Product create(String name, Category category, BigDecimal price, String description, String imageUrl, Integer stock) {
-        if (stock < 0) {
+        if (stock == null || stock < 0 ) {
             throw new IllegalArgumentException("Stock cannot be negative");
         }
 
@@ -69,6 +70,22 @@ public class Product {
         product.stock = stock;
         product.status = ProductStatus.ACTIVE;
         return product;
+    }
+
+
+    Product(Long id, String name, Category category, BigDecimal price, String description, String imageUrl, Integer stock) {
+        if (stock == null || stock < 0 ) {
+            throw new IllegalArgumentException("Stock cannot be negative");
+        }
+        this.id = id;
+        this.name = name;
+        this.category = category;
+        this.price = price;
+        this.description = description;
+        this.imageUrl = imageUrl;
+        this.stock = stock;
+        this.status = ProductStatus.ACTIVE;
+
     }
 
 }
