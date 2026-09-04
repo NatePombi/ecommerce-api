@@ -2,6 +2,8 @@ package com.nathan.ecommerceapi.common.dto.exception;
 
 import com.nathan.ecommerceapi.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -71,6 +73,38 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errorResponse);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handlesDataIntegrityViolation(DataIntegrityViolationException e, HttpServletRequest request) {
+        String message = resolveDataIntegrityViolation(e);
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+
+        return  ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorResponse);
+    }
+
+
+    private String resolveDataIntegrityViolation(DataIntegrityViolationException e){
+        Throwable cause = e.getCause();
+
+        if( cause instanceof ConstraintViolationException constraintException){
+            String constraintName = constraintException.getConstraintName();
+
+            if("idx_customers_username_lower".equals(constraintName)){
+                return "Email already exists";
+            }
+        }
+
+        return "A database constraint has been violated";
     }
 
 }

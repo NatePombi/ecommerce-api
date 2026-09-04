@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 
-@Table(name = "cart items")
+@Table(name = "cart_items")
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +22,7 @@ public class CartItem {
     @JoinColumn(name = "cart_id",nullable = false)
     private Cart cart;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "products",nullable = false)
+    @JoinColumn(name = "product_id",nullable = false)
     private Product product;
     @Positive
     @Column(nullable = false)

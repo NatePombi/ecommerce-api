@@ -27,6 +27,11 @@ public class Category {
         category.name = name;
         return category;
     }
+
+    Category (Long id, String name){
+        this.id = id;
+        this.name = name;
+    }
 }
 
 

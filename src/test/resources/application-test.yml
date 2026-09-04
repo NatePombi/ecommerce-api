@@ -1,0 +1,33 @@
+debug: false
+
+JWT_SECRET: VGhpc0lzQVN1cGVyU2VjcmV0S2V5Rm9ySldUU2lnbmluZw==
+JWT_EXPIRE: 36000000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecommercetest
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: Masoko
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        c3p0:
+          timeout: 3
+
+  flyway:
+    community-db-support-enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.springframework.boot.autoconfigure: INFO
+    org.springframework.context.annotation: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
