@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .status(HttpStatus.NOT_FOUND.value())
+                .status(HttpStatus.UNAUTHORIZED.value())
                 .message(e.getMessage())
                 .path(request.getRequestURI())
                 .build();

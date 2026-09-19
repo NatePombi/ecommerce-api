@@ -2,8 +2,11 @@ package com.nathan.ecommerceapi.customer.controller;
 
 import com.nathan.ecommerceapi.config.security.CustomerDetailsService;
 import com.nathan.ecommerceapi.config.security.JwtService;
+import com.nathan.ecommerceapi.customer.dto.ChangePasswordRequest;
 import com.nathan.ecommerceapi.customer.dto.CreateCustomerRequest;
 import com.nathan.ecommerceapi.customer.dto.CustomerResponse;
+import com.nathan.ecommerceapi.customer.dto.UpdateCustomerRequest;
+import com.nathan.ecommerceapi.customer.entity.Customer;
 import com.nathan.ecommerceapi.customer.entity.CustomerRole;
 import com.nathan.ecommerceapi.customer.service.CustomerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,15 +16,22 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -135,4 +145,50 @@ public class CustomerControllerTest {
         verifyNoInteractions(customerService);
 
     }
+
+    @Test
+    @WithMockUser(username = "test@gmail.com")
+    void shouldChangePassword() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("hashed-password","new-hash-password");
+
+        CustomerResponse response = mock(CustomerResponse.class);
+
+        when(customerService.changePassword(eq("test@gmail.com"),any(ChangePasswordRequest.class))).thenReturn(response);
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                .header("Authorization","Bearer Valid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+
+        verify(customerService).changePassword(eq("test@gmail.com"),any(ChangePasswordRequest.class));
+
+    }
+
+    @Test
+    @WithMockUser(username = "test@gmail.com")
+    void shouldFailChangePassword_EmptyOldPassword() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest(" ","new-hash-password");
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                .header("Authorization","Bearer Valid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "test@gmail.com")
+    void shouldFailChangePassword_EmptyNewPassword() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("hashed-password"," ");
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                        .header("Authorization","Bearer Valid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+
 }
