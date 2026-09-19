@@ -4,7 +4,7 @@ create table customers(
     email varchar(50) not null ,
     password_hash varchar(225) not null ,
     phone_number varchar(20) not null ,
-    active boolean not null default true,
+    is_active boolean not null default true,
     role varchar(20) not null ,
     created_at timestamp not null ,
     update_at timestamp not null

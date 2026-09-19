@@ -1,14 +1,8 @@
 package com.nathan.ecommerceapi.customer.service;
 
-import com.nathan.ecommerceapi.common.dto.exception.EmailAlreadyExistsException;
-import com.nathan.ecommerceapi.common.dto.exception.InvalidCredentialsException;
-import com.nathan.ecommerceapi.common.dto.exception.UsernameAlreadyExistException;
-import com.nathan.ecommerceapi.config.security.CustomerDetailsService;
+import com.nathan.ecommerceapi.common.dto.exception.*;
 import com.nathan.ecommerceapi.config.security.JwtService;
-import com.nathan.ecommerceapi.customer.dto.CreateCustomerRequest;
-import com.nathan.ecommerceapi.customer.dto.CustomerResponse;
-import com.nathan.ecommerceapi.customer.dto.LoginRequest;
-import com.nathan.ecommerceapi.customer.dto.LoginResponse;
+import com.nathan.ecommerceapi.customer.dto.*;
 import com.nathan.ecommerceapi.customer.entity.Customer;
 import com.nathan.ecommerceapi.customer.entity.CustomerRole;
 import com.nathan.ecommerceapi.customer.entity.TestCustomer;
@@ -21,12 +15,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -123,6 +114,21 @@ public class CustomerServiceTest {
     }
 
     @Test
+    void shouldFailLoginCustomer_AccountDeactivated(){
+        when(customerRepository.findByEmailIgnoreCase(testCustomer.getEmail())).thenReturn(Optional.of(testCustomer));
+        testCustomer.deactivate();
+        LoginRequest request = new LoginRequest("test@gmail.com","raw-password");
+
+        assertThrows(InvalidCredentialsException.class,()->{
+            customerService.login(request);
+        });
+
+        verify(jwtService, never()).createToken(testCustomer.getId(),testCustomer.getEmail());
+        verify(passwordEncoder,never()).encode(anyString());
+
+    }
+
+    @Test
     void shouldFailLoginCustomer_EmailDoesNotExist(){
         LoginRequest request = new LoginRequest("test@gmail.com","raw-password");
         when(customerRepository.findByEmailIgnoreCase(testCustomer.getEmail())).thenReturn(Optional.empty());
@@ -156,5 +162,155 @@ public class CustomerServiceTest {
     }
 
 
+    @Test
+    void shouldDisableCustomer(){
+        when(customerRepository.findById(testCustomer.getId())).thenReturn(Optional.of(testCustomer));
+
+        customerService.disableUser(testCustomer.getId());
+
+        assertFalse(testCustomer.getIsActive());
+    }
+
+    @Test
+    void shouldFailDisableCustomer_UserNotFound(){
+        when(customerRepository.findById(455L)).thenReturn(Optional.empty());
+        assertThrows(UserNotFoundException.class,()->{
+            customerService.disableUser(455L);
+        });
+    }
+
+
+    @Test
+    void shouldEnableCustomer(){
+        testCustomer.deactivate();
+        when(customerRepository.findById(testCustomer.getId())).thenReturn(Optional.of(testCustomer));
+
+        customerService.enableUser(testCustomer.getId());
+
+        assertTrue(testCustomer.getIsActive());
+    }
+
+    @Test
+    void shouldFailEnableCustomer_UserNotFound(){
+        when(customerRepository.findById(455L)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,()->{
+            customerService.enableUser(455L);
+        });
+
+
+    }
+
+
+    @Test
+    void shouldDeleteCustomer(){
+        when(customerRepository.findById(testCustomer.getId())).thenReturn(Optional.of(testCustomer));
+
+        customerService.deleteCustomer(testCustomer.getId());
+
+        verify(customerRepository).findById(testCustomer.getId());
+        verify(customerRepository).delete(testCustomer);
+    }
+
+    @Test
+    void shouldFailDeleteCustomer_UserNotFound(){
+        when(customerRepository.findById(455L)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,()->{
+            customerService.deleteCustomer(455L);
+        });
+
+        verify(customerRepository, never()).delete(any(Customer.class));
+    }
+
+
+    @Test
+    void shouldGetAllCustomers(){
+        when(customerRepository.findByRole(CustomerRole.CUSTOMER)).thenReturn(List.of(testCustomer));
+
+        List<CustomerResponse> customers = customerService.getAllCustomers();
+
+        assertNotNull(customers);
+
+        assertEquals(1,customers.size());
+
+        verify(customerRepository).findByRole(CustomerRole.CUSTOMER);
+    }
+
+    @Test
+    void shouldUpdateCustomer(){
+
+        UpdateCustomerRequest request = new UpdateCustomerRequest("John Doe","doe@gmail.com","7895365412");
+
+        CustomerResponse response = customerService.updateCurrentCustomer(testCustomer,request);
+
+        assertNotNull(response);
+
+        assertEquals("John Doe",response.getFullName());
+        assertEquals("doe@gmail.com",response.getEmail());
+        assertEquals("7895365412",response.getPhoneNumber());
+
+        verify(customerRepository, never()).findByEmailIgnoreCase(testCustomer.getEmail());
+    }
+
+    @Test
+    void shouldFailUpdateCustomer_EmailAlreadyExist(){
+        when(customerRepository.existsByEmailIgnoreCase("doe@gmail.com")).thenReturn(true);
+        UpdateCustomerRequest request = new UpdateCustomerRequest("John Doe","doe@gmail.com","7895365412");
+
+
+        assertThrows(EmailAlreadyExistsException.class,()->{
+            customerService.updateCurrentCustomer(testCustomer,request);
+        });
+
+    }
+
+    @Test
+    void shouldChangePassword(){
+        ChangePasswordRequest request = new ChangePasswordRequest("hashed-password","new-hash-password");
+        when(customerRepository.findByEmailIgnoreCase(testCustomer.getEmail())).thenReturn(Optional.of(testCustomer));
+        when(passwordEncoder.matches(request.getOldPassword(),testCustomer.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.encode(request.getNewPassword())).thenReturn("some-new-hash-password");
+
+        CustomerResponse response = customerService.changePassword(testCustomer.getEmail(),request);
+
+        assertNotNull(response);
+
+        assertEquals("some-new-hash-password",testCustomer.getPasswordHash());
+
+        verify(customerRepository).findByEmailIgnoreCase(testCustomer.getEmail());
+        verify(passwordEncoder).encode("new-hash-password");
+
+    }
+
+    @Test
+    void shouldFailChangePassword_InvalidOldPassword(){
+        ChangePasswordRequest request = new ChangePasswordRequest("hashed-password","new-hash-password");
+        when(customerRepository.findByEmailIgnoreCase(testCustomer.getEmail())).thenReturn(Optional.of(testCustomer));
+        when(passwordEncoder.matches(request.getOldPassword(),testCustomer.getPasswordHash())).thenReturn(false);
+
+        assertThrows(InvalidPasswordException.class,()->{
+            customerService.changePassword(testCustomer.getEmail(),request);
+        });
+
+        verify(passwordEncoder).matches(request.getOldPassword(),testCustomer.getPasswordHash());
+        verify(passwordEncoder, never()).encode("new-hash-password");
+
+    }
+
+    @Test
+    void shouldFailChangePassword_SamePassword(){
+        ChangePasswordRequest request = new ChangePasswordRequest("hashed-password","hashed-password");
+        when(customerRepository.findByEmailIgnoreCase(testCustomer.getEmail())).thenReturn(Optional.of(testCustomer));
+        when(passwordEncoder.matches(request.getOldPassword(),testCustomer.getPasswordHash())).thenReturn(true);
+
+        assertThrows(SamePasswordException.class,()->{
+            customerService.changePassword(testCustomer.getEmail(),request);
+        });
+
+        verify(passwordEncoder).matches(request.getOldPassword(),testCustomer.getPasswordHash());
+        verify(passwordEncoder,never()).encode("hashed-password");
+
+    }
 
 }

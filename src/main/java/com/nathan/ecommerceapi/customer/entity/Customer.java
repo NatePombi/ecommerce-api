@@ -36,11 +36,11 @@ public class Customer implements UserDetails {
     @Column(nullable = false, name = "password_hash")
     private String passwordHash;
     @NotBlank
-    @Column(nullable = false, unique = true,name = "phone_number")
+    @Column(nullable = false,name = "phone_number")
     private String phoneNumber;
     @NotNull
-    @Column(nullable = false)
-    private Boolean active;
+    @Column(nullable = false, name = "is_active")
+    private Boolean isActive;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CustomerRole role;
@@ -57,7 +57,7 @@ public class Customer implements UserDetails {
         customer.email = email;
         customer.passwordHash = passwordHash;
         customer.phoneNumber = phoneNumber;
-        customer.active = true;
+        customer.isActive = true;
         customer.role = CustomerRole.CUSTOMER;
         return customer;
     }
@@ -68,7 +68,7 @@ public class Customer implements UserDetails {
         this.email = email;
         this.passwordHash = passwordHash;
         this.phoneNumber = phoneNumber;
-        this.active = true;
+        this.isActive = true;
         this.role = CustomerRole.CUSTOMER;
     }
 
@@ -83,12 +83,12 @@ public class Customer implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.toString()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
     }
 
     @Override
     public @Nullable String getPassword() {
-        return "";
+        return this.passwordHash;
     }
 
     @Override
@@ -96,4 +96,27 @@ public class Customer implements UserDetails {
         return this.email;
     }
 
+    @Override
+    public boolean isEnabled() {
+        return this.isActive;
+    }
+
+    public void activate() {
+        this.isActive = true;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    public void updateCustomer(String fullName, String email, String phoneNumber){
+        this.fullName = fullName;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void changePassword(String hashPassword){
+        this.passwordHash = hashPassword;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

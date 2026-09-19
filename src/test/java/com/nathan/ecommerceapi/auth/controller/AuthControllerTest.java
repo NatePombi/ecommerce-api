@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
-public class AuthControllerIntegrationTest {
+public class AuthControllerTest {
     @Autowired
     private ObjectMapper mapper;
     @Autowired
@@ -55,6 +55,7 @@ public class AuthControllerIntegrationTest {
 
         verify(customerService).login(any(LoginRequest.class));
     }
+
 
     @Test
     void shouldFailLogin_EmailEmpty() throws Exception {
@@ -112,4 +113,6 @@ public class AuthControllerIntegrationTest {
         verify(customerService).login(any(LoginRequest.class));
 
     }
+
+
 }
