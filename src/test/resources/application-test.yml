@@ -1,14 +1,14 @@
 debug: false
 
-JWT_SECRET: ${JWT_SECRET}
-JWT_EXPIRE: ${JWT_EXPIRE:36000000}
+JWT_SECRET: XBlci1zZWNyZXQta2V5LXN1cGVyLXNlY3JldC1rZXk=c3VwZXItc2VjcmV0LWtleS1zd
+JWT_EXPIRE: 36000000
 
 spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ecommercetest}
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Masoko}
 
   jpa:
     hibernate:
