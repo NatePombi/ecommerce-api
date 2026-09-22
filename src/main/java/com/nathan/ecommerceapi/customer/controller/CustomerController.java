@@ -29,7 +29,7 @@ public class CustomerController {
 
     @PatchMapping("/me/password")
     public ResponseEntity<CustomerResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, @AuthenticationPrincipal(expression = "username") String email){
-        return ResponseEntity.ok(customerService.changePassword(email,request));
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(customerService.changePassword(email,request));
     }
 
 }

@@ -103,6 +103,20 @@ public class CustomerControllerTest {
 
     }
 
+    @Test
+    void shouldFailCreateCustomer_PasswordShort() throws Exception {
+        CreateCustomerRequest request = new CreateCustomerRequest("Tester","short", "test@gmail.com","0236548652");
+
+        mockMvc.perform(post("/api/v1/customers")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(customerService);
+
+    }
+
 
     @Test
     void shouldFailCreateCustomer_EmailEmpty() throws Exception {
@@ -159,7 +173,7 @@ public class CustomerControllerTest {
                 .header("Authorization","Bearer Valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
 
         verify(customerService).changePassword(eq("test@gmail.com"),any(ChangePasswordRequest.class));
@@ -182,6 +196,18 @@ public class CustomerControllerTest {
     @WithMockUser(username = "test@gmail.com")
     void shouldFailChangePassword_EmptyNewPassword() throws Exception {
         ChangePasswordRequest request = new ChangePasswordRequest("hashed-password"," ");
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                        .header("Authorization","Bearer Valid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "test@gmail.com")
+    void shouldFailChangePassword_PasswordShort() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("hashed-password","short");
 
         mockMvc.perform(patch("/api/v1/customers/me/password")
                         .header("Authorization","Bearer Valid-token")

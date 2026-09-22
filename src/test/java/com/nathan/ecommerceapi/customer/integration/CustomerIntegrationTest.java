@@ -4,6 +4,7 @@ import com.nathan.ecommerceapi.config.security.CustomerDetailsService;
 import com.nathan.ecommerceapi.config.security.JwtService;
 import com.nathan.ecommerceapi.customer.dto.ChangePasswordRequest;
 import com.nathan.ecommerceapi.customer.dto.CreateCustomerRequest;
+import com.nathan.ecommerceapi.customer.dto.LoginRequest;
 import com.nathan.ecommerceapi.customer.dto.UpdateCustomerRequest;
 import com.nathan.ecommerceapi.customer.entity.Customer;
 import com.nathan.ecommerceapi.customer.repository.CustomerRepository;
@@ -51,14 +52,14 @@ public class CustomerIntegrationTest {
     @BeforeEach
     void startUp(){
         customerRepository.deleteAll();
-        String hash = passwordEncoder.encode("password");
+        String hash = passwordEncoder.encode("password123");
         Customer customer1 = Customer.create("Nate","nate@gmail.com",hash,"02158115");
         customer = customerRepository.save(customer1);
     }
 
     @Test
     void shouldCreateCustomer() throws Exception {
-        request = new CreateCustomerRequest("Tester","test123","test@gmail.com","0765236212");
+        request = new CreateCustomerRequest("Tester","tester123","test@gmail.com","0765236212");
 
         mockMvc.perform(post("/api/v1/customers")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -68,7 +69,7 @@ public class CustomerIntegrationTest {
         Optional<Customer> customer = customerRepository.findByEmailIgnoreCase("test@gmail.com");
 
         assertTrue(customer.isPresent());
-        assertTrue(passwordEncoder.matches("test123",customer.get().getPasswordHash()));
+        assertTrue(passwordEncoder.matches("tester123",customer.get().getPasswordHash()));
         assertEquals(request.getEmail(),customer.get().getEmail());
         assertEquals(request.getPhoneNumber(),customer.get().getPhoneNumber());
     }
@@ -212,13 +213,13 @@ public class CustomerIntegrationTest {
     @Test
     void shouldChangePassword() throws Exception {
         token = jwtService.createToken(customer.getId(),customer.getEmail());
-        ChangePasswordRequest request = new ChangePasswordRequest("password","new-password");
+        ChangePasswordRequest request = new ChangePasswordRequest("password123","new-password");
 
         mockMvc.perform(patch("/api/v1/customers/me/password")
                 .header("Authorization","Bearer "+ token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         Optional<Customer> customer1 = customerRepository.findByEmailIgnoreCase(customer.getEmail());
 
@@ -226,6 +227,52 @@ public class CustomerIntegrationTest {
 
         assertTrue(passwordEncoder.matches("new-password",customer1.get().getPasswordHash()));
     }
+
+    @Test
+    void shouldLogInAfterChangePassword() throws Exception {
+        token = jwtService.createToken(customer.getId(),customer.getEmail());
+        ChangePasswordRequest request = new ChangePasswordRequest("password123","new-password");
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                        .header("Authorization","Bearer "+ token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+
+        LoginRequest request1 = new LoginRequest("nate@gmail.com","new-password");
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .header("Authorization","Bearer "+ token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request1)))
+                .andExpect(status().isOk());
+
+    }
+
+
+    @Test
+    void shouldFailLogInAfterChangePassword_OldPasswordRejected() throws Exception {
+        token = jwtService.createToken(customer.getId(),customer.getEmail());
+        ChangePasswordRequest request = new ChangePasswordRequest("password123","new-password");
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                        .header("Authorization","Bearer "+ token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+
+        LoginRequest request1 = new LoginRequest("nate@gmail.com","password123");
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .header("Authorization","Bearer "+ token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request1)))
+                .andExpect(status().isUnauthorized());
+
+    }
+
 
     @Test
     void shouldFailChangePassword_InvalidOldPassword() throws Exception {
@@ -241,7 +288,7 @@ public class CustomerIntegrationTest {
 
     @Test
     void shouldFailChangePassword_SamePassword() throws Exception {
-        ChangePasswordRequest request = new ChangePasswordRequest("password","password");
+        ChangePasswordRequest request = new ChangePasswordRequest("password123","password123");
         token = jwtService.createToken(customer.getId(),customer.getEmail());
 
         mockMvc.perform(patch("/api/v1/customers/me/password")
@@ -249,6 +296,30 @@ public class CustomerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void shouldFailChangePassword_PasswordShort() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("password123","short");
+        token = jwtService.createToken(customer.getId(),customer.getEmail());
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                        .header("Authorization","Bearer "+ token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldFailChangePassword_NotLoggedIn() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("password123","new-password");
+
+        mockMvc.perform(patch("/api/v1/customers/me/password")
+                        .header("Authorization","Bearer Invalid")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
     }
 
 
