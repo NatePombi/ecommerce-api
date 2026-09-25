@@ -204,24 +204,12 @@ public class CustomerServiceTest {
 
     @Test
     void shouldDeleteCustomer(){
-        when(customerRepository.findById(testCustomer.getId())).thenReturn(Optional.of(testCustomer));
 
-        customerService.deleteCustomer(testCustomer.getId());
+        customerService.deleteCustomer(testCustomer);
 
-        verify(customerRepository).findById(testCustomer.getId());
         verify(customerRepository).delete(testCustomer);
     }
 
-    @Test
-    void shouldFailDeleteCustomer_UserNotFound(){
-        when(customerRepository.findById(455L)).thenReturn(Optional.empty());
-
-        assertThrows(UserNotFoundException.class,()->{
-            customerService.deleteCustomer(455L);
-        });
-
-        verify(customerRepository, never()).delete(any(Customer.class));
-    }
 
 
     @Test
