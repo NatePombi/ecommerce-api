@@ -34,8 +34,6 @@ public class AdminControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
-    private Customer testAdmin;
-    private String token;
 
 
 
@@ -50,6 +48,7 @@ public class AdminControllerTest {
 
 
         verify(customerService).disableUser(12L);
+
     }
 
     @Test
@@ -65,17 +64,6 @@ public class AdminControllerTest {
     }
 
 
-    @Test
-    @WithMockUser(username = "admin@gmail.com", roles = {"ADMIN"})
-    void shouldDeleteCustomer() throws Exception {
-
-        mockMvc.perform(delete("/api/v1/admin/users/12/delete")
-                        .with(csrf()))
-                .andExpect(status().isNoContent());
-
-
-        verify(customerService).deleteCustomer(12L);
-    }
 
     @Test
     @WithMockUser(username = "admin@gmail.com", roles = "ADMIN")

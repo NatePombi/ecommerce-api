@@ -11,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
+
 @RestController
 @RequestMapping("/api/v1/customers")
 @RequiredArgsConstructor
@@ -30,6 +32,19 @@ public class CustomerController {
     @PatchMapping("/me/password")
     public ResponseEntity<CustomerResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, @AuthenticationPrincipal(expression = "username") String email){
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(customerService.changePassword(email,request));
+    }
+
+    @PatchMapping("/disable")
+    public ResponseEntity<Void> disableUser( @AuthenticationPrincipal Customer customer) {
+        customerService.disableUser(customer.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal Customer customer){
+        customerService.deleteCustomer(customer);
+        return ResponseEntity.noContent().build();
     }
 
 }

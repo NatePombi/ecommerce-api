@@ -2,6 +2,7 @@ package com.nathan.ecommerceapi.admin.integration;
 
 import com.nathan.ecommerceapi.config.security.CustomerDetailsService;
 import com.nathan.ecommerceapi.config.security.JwtService;
+import com.nathan.ecommerceapi.customer.dto.LoginRequest;
 import com.nathan.ecommerceapi.customer.entity.Customer;
 import com.nathan.ecommerceapi.customer.entity.CustomerRole;
 import com.nathan.ecommerceapi.customer.repository.CustomerRepository;
@@ -12,9 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class AdminIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
     @Autowired
     private CustomerService customerService;
     @Autowired
@@ -76,6 +81,8 @@ public class AdminIntegrationTest {
 
     }
 
+
+
     @Test
     void shouldFailDisable_NotAdmin()throws Exception {
         token = jwtService.createToken(testCustomer1.getId(),testCustomer1.getEmail());
@@ -108,29 +115,6 @@ public class AdminIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-
-    @Test
-    void shouldDeleteCustomer() throws Exception {
-
-        mockMvc.perform(delete("/api/v1/admin/users/"+testCustomer1.getId()+"/delete")
-                .header("Authorization","Bearer "+token))
-                .andExpect(status().isNoContent());
-
-        List<Customer> customers = customerRepository.findByRole(CustomerRole.CUSTOMER);
-
-        assertFalse(customers.isEmpty());
-        assertFalse(customers.contains(testCustomer1));
-        assertEquals(1, customers.size());
-    }
-
-    @Test
-    void shouldFailDelete_NotAdmin()throws Exception {
-        token = jwtService.createToken(testCustomer1.getId(),testCustomer1.getEmail());
-
-        mockMvc.perform(delete("/api/v1/admin/users/"+testCustomer2.getId()+"/delete")
-                        .header("Authorization","Bearer "+token))
-                .andExpect(status().isForbidden());
-    }
 
 
     @Test

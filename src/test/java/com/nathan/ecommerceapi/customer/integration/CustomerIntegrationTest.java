@@ -7,6 +7,7 @@ import com.nathan.ecommerceapi.customer.dto.CreateCustomerRequest;
 import com.nathan.ecommerceapi.customer.dto.LoginRequest;
 import com.nathan.ecommerceapi.customer.dto.UpdateCustomerRequest;
 import com.nathan.ecommerceapi.customer.entity.Customer;
+import com.nathan.ecommerceapi.customer.entity.CustomerRole;
 import com.nathan.ecommerceapi.customer.repository.CustomerRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -323,7 +325,43 @@ public class CustomerIntegrationTest {
     }
 
 
+    @Test
+    void shouldDisableCustomerAndLogin_Unsuccessfully() throws Exception {
 
+        token = jwtService.createToken(customer.getId(),customer.getEmail());
+
+        mockMvc.perform(patch("/api/v1/customers/disable")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        Optional<Customer> customer1 = customerRepository.findById(customer.getId());
+
+        assertTrue(customer1.isPresent());
+        assertFalse(customer1.get().getIsActive());
+
+
+        token = jwtService.createToken(customer.getId(),customer.getEmail());
+        LoginRequest request = new LoginRequest(customer.getEmail(),customer.getPassword());
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .header("Authorization","Bearer "+token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+
+    @Test
+    void shouldDeleteCustomer() throws Exception {
+        token = jwtService.createToken(customer.getId(),customer.getEmail());
+
+        mockMvc.perform(delete("/api/v1/customers/delete")
+                        .header("Authorization","Bearer "+token))
+                .andExpect(status().isNoContent());
+
+        List<Customer> customers = customerRepository.findByRole(CustomerRole.CUSTOMER);
+
+        assertTrue(customers.isEmpty());
+    }
 
 
 }
